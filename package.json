@@ -1,0 +1,58 @@
+{
+  "name": "ssb-governor",
+  "displayName": "SSB Governor",
+  "description": "Governance tool for Microsoft SQL Server Service Broker – validates DDL and generates canonical baseline scripts.",
+  "version": "0.1.0",
+  "publisher": "tallonealso",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ssbGovernor.validate",
+        "title": "SSB: Validate workspace"
+      },
+      {
+        "command": "ssbGovernor.generateBaseline",
+        "title": "SSB: Generate baseline DDL"
+      }
+    ],
+    "configuration": {
+      "title": "SSB Governor",
+      "properties": {
+        "ssbGovernor.maxQueueReaders": {
+          "type": "number",
+          "default": 5,
+          "description": "MAX_QUEUE_READERS value used in activation DDL."
+        },
+        "ssbGovernor.generatedFolder": {
+          "type": "string",
+          "default": "ssb/generated",
+          "description": "Workspace-relative folder for generated SQL scripts."
+        },
+        "ssbGovernor.reportsFolder": {
+          "type": "string",
+          "default": "ssb/reports",
+          "description": "Workspace-relative folder for JSON validation reports."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.3"
+  }
+}
