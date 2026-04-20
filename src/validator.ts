@@ -238,10 +238,10 @@ function checkQueueServiceActivation(fileContents: Map<string, string>): CheckRe
         if (/CREATE\s+SERVICE\s+\[SSB\]\.\[SVC_INBOUND\]/.test(upper)) {
             foundService = true;
             const lineIdx = findLine(raw, /CREATE\s+SERVICE/i);
-            if (!/\[SSB\]\.\[CTR_FF\]/i.test(upper)) {
+            if (!/\[SSB\]\.\[CTR_FF\]/.test(upper)) {
                 violations.push({ file: filePath, line: lineIdx >= 0 ? lineIdx : 0, message: 'Service [SSB].[Svc_Inbound] must list contract [SSB].[Ctr_FF]' });
             }
-            if (!/\[SSB\]\.\[CTR_LR\]/i.test(upper)) {
+            if (!/\[SSB\]\.\[CTR_LR\]/.test(upper)) {
                 violations.push({ file: filePath, line: lineIdx >= 0 ? lineIdx : 0, message: 'Service [SSB].[Svc_Inbound] must list contract [SSB].[Ctr_LR]' });
             }
         }
@@ -249,15 +249,15 @@ function checkQueueServiceActivation(fileContents: Map<string, string>): CheckRe
         // Activation check (ALTER QUEUE or CREATE QUEUE WITH ACTIVATION)
         if (/ALTER\s+QUEUE\s+\[SSB\]\.\[Q_INBOUND\]/.test(upper) || (/CREATE\s+QUEUE\s+\[SSB\]\.\[Q_INBOUND\]/.test(upper) && /ACTIVATION/.test(upper))) {
             const lineIdx = findLine(raw, /ACTIVATION/i);
-            if (/ACTIVATION/i.test(upper)) {
+            if (/ACTIVATION/.test(upper)) {
                 foundActivation = true;
-                if (!/PROCEDURE_NAME\s*=\s*\[SSB\]\.\[USP_ACTIVATION_INBOUND\]/i.test(upper)) {
+                if (!/PROCEDURE_NAME\s*=\s*\[SSB\]\.\[USP_ACTIVATION_INBOUND\]/.test(upper)) {
                     violations.push({ file: filePath, line: lineIdx >= 0 ? lineIdx : 0, message: 'Activation PROCEDURE_NAME must be [SSB].[usp_Activation_Inbound]' });
                 }
-                if (!/EXECUTE\s+AS\s+OWNER/i.test(upper)) {
+                if (!/EXECUTE\s+AS\s+OWNER/.test(upper)) {
                     violations.push({ file: filePath, line: lineIdx >= 0 ? lineIdx : 0, message: 'Activation must use EXECUTE AS OWNER' });
                 }
-                if (!/STATUS\s*=\s*ON/i.test(upper)) {
+                if (!/STATUS\s*=\s*ON/.test(upper)) {
                     violations.push({ file: filePath, line: lineIdx >= 0 ? lineIdx : 0, message: 'Activation STATUS must be ON' });
                 }
             }
