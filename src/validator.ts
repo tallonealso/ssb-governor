@@ -45,6 +45,14 @@ const CONTRACT_CTR_LR_MESSAGES = [
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 /**
+ * Escapes all regex special characters (including backslash) in a literal string
+ * so it can safely be embedded inside `new RegExp(...)`.
+ */
+function escapeRegex(s: string): string {
+    return s.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+}
+
+/**
  * Returns the 0-based line index of the first line matching the pattern.
  * Returns -1 if not found.
  */
@@ -99,10 +107,10 @@ function checkMessageTypes(
 
         for (const [filePath, raw] of fileContents) {
             const upper = normalizeSQL(raw);
-            const escapedType = msgType.replace(/[[\]]/g, '\\$&').replace(/\./g, '\\.');
+            const escapedType = escapeRegex(msgType.toUpperCase());
 
             const createPattern = new RegExp(
-                `CREATE\\s+MESSAGE\\s+TYPE\\s+${escapedType.toUpperCase()}`,
+                `CREATE\\s+MESSAGE\\s+TYPE\\s+${escapedType}`,
             );
             if (createPattern.test(upper)) {
                 found = true;
@@ -112,7 +120,7 @@ function checkMessageTypes(
                 if (!foundValidation) {
                     const lineIdx = findLine(
                         raw,
-                        new RegExp(`CREATE\\s+MESSAGE\\s+TYPE\\s+\\${msgType.replace(/\./g, '\\.')}`, 'i'),
+                        new RegExp(`CREATE\\s+MESSAGE\\s+TYPE\\s+${escapeRegex(msgType)}`, 'i'),
                     );
                     violations.push({
                         file: filePath,
@@ -153,8 +161,8 @@ function checkContracts(fileContents: Map<string, string>): CheckResult {
 
         for (const [filePath, raw] of fileContents) {
             const upper = normalizeSQL(raw);
-            const escapedName = contractName.replace(/[[\]]/g, '\\$&').replace(/\./g, '\\.');
-            const pattern = new RegExp(`CREATE\\s+CONTRACT\\s+${escapedName.toUpperCase()}`);
+            const escapedName = escapeRegex(contractName.toUpperCase());
+            const pattern = new RegExp(`CREATE\\s+CONTRACT\\s+${escapedName}`);
             if (pattern.test(upper)) {
                 contractBlock = upper;
                 contractFile = filePath;
@@ -176,9 +184,9 @@ function checkContracts(fileContents: Map<string, string>): CheckResult {
         }
 
         for (const { type, sentBy } of expectedMessages) {
-            const escapedType = type.replace(/[[\]]/g, '\\$&').replace(/\./g, '\\.');
+            const escapedType = escapeRegex(type.toUpperCase());
             const msgPattern = new RegExp(
-                `${escapedType.toUpperCase()}\\s+SENT\\s+BY\\s+${sentBy.toUpperCase()}`,
+                `${escapedType}\\s+SENT\\s+BY\\s+${sentBy.toUpperCase()}`,
             );
             if (!msgPattern.test(contractBlock)) {
                 violations.push({
@@ -212,7 +220,7 @@ function checkQueueServiceActivation(fileContents: Map<string, string>): CheckRe
         const upper = normalizeSQL(raw);
 
         // Queue check
-        if (/CREATE\s+QUEUE\s+\[SSB\]\.\[Q_INBOUND\]/i.test(upper) || /CREATE\s+QUEUE\s+\[SSB\]\.\[Q_Inbound\]/i.test(raw)) {
+        if (/CREATE\s+QUEUE\s+\[SSB\]\.\[Q_INBOUND\]/.test(upper)) {
             foundQueue = true;
             const lineIdx = findLine(raw, /CREATE\s+QUEUE/i);
             if (!/STATUS\s*=\s*ON/.test(upper)) {
@@ -227,7 +235,7 @@ function checkQueueServiceActivation(fileContents: Map<string, string>): CheckRe
         }
 
         // Service check
-        if (/CREATE\s+SERVICE\s+\[SSB\]\.\[SVC_INBOUND\]/i.test(upper)) {
+        if (/CREATE\s+SERVICE\s+\[SSB\]\.\[SVC_INBOUND\]/.test(upper)) {
             foundService = true;
             const lineIdx = findLine(raw, /CREATE\s+SERVICE/i);
             if (!/\[SSB\]\.\[CTR_FF\]/i.test(upper)) {
@@ -239,7 +247,7 @@ function checkQueueServiceActivation(fileContents: Map<string, string>): CheckRe
         }
 
         // Activation check (ALTER QUEUE or CREATE QUEUE WITH ACTIVATION)
-        if (/ALTER\s+QUEUE\s+\[SSB\]\.\[Q_INBOUND\]/i.test(upper) || (/CREATE\s+QUEUE\s+\[SSB\]\.\[Q_INBOUND\]/i.test(upper) && /ACTIVATION/i.test(upper))) {
+        if (/ALTER\s+QUEUE\s+\[SSB\]\.\[Q_INBOUND\]/.test(upper) || (/CREATE\s+QUEUE\s+\[SSB\]\.\[Q_INBOUND\]/.test(upper) && /ACTIVATION/.test(upper))) {
             const lineIdx = findLine(raw, /ACTIVATION/i);
             if (/ACTIVATION/i.test(upper)) {
                 foundActivation = true;
@@ -342,7 +350,7 @@ function checkDispatchProcs(fileContents: Map<string, string>): CheckResult {
 
     for (const proc of required) {
         let found = false;
-        const escapedUpper = proc.toUpperCase().replace(/[[\]]/g, '\\$&').replace(/\./g, '\\.');
+        const escapedUpper = escapeRegex(proc.toUpperCase());
         for (const [, raw] of fileContents) {
             const upper = normalizeSQL(raw);
             if (
